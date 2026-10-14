@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.vercel/
+.env
+.env.local
+.env.*.local
+coverage/
+*.tsbuildinfo
+pnpm-debug.log*
+.codex/
+frontend-design skill.md
