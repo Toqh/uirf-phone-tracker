@@ -51,7 +51,15 @@ The readiness checklist records that setup was completed. It cannot remotely ins
 
    Alternatively, run [the migration](supabase/migrations/202610140001_initial_schema.sql) once in the Supabase SQL editor.
 
-5. In **Authentication → URL Configuration**, set the site URL to `http://localhost:3000` for local work. Add the final Vercel URL after deployment. Decide whether email confirmation should be enabled. The local config disables it for easier development; production may enable it without changing the app.
+5. In **Authentication → URL Configuration**, set the site URL to `http://localhost:3000` for local work and add `http://localhost:3000/auth/confirm` as a redirect URL. Add the equivalent final Vercel URLs after deployment.
+
+   When email confirmation is enabled, open **Authentication → Email Templates → Confirm signup** and use this URL for the confirmation link:
+
+   ```text
+   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
+   ```
+
+   The app also accepts Supabase's PKCE `code` callback, but the token-hash template works when a user opens the email on a different browser or device.
 
 6. Start the app:
 
@@ -133,6 +141,16 @@ The partial unique index and `FOR UPDATE` lock are the database guarantees for c
 5. Add `https://YOUR_VERCEL_DOMAIN` and `https://YOUR_VERCEL_DOMAIN/**` to Supabase **Authentication → URL Configuration**. Set the site URL to the production domain.
 6. Apply migrations to the production Supabase project, establish the first Admin, and run the acceptance scenarios above with non-production test records before operational use.
 
+## Register controls and CSV imports
+
+Phone, directory, and account registers support sorting, filtering, row selection, and Admin-only bulk actions. Select-all targets the currently visible filtered rows. Bulk writes are saved per record, with separate success/failure results; failed writes are never automatically retried. Reports and recent import history also support sorting and filters.
+
+Checklist reset is enabled **only for Available phones with completed checklists**, never for Issued phones. Reset requires a reason, returns the phone to Awaiting configuration, clears current readiness, and retains the original checklist and audit history. Completing it again creates a new history entry.
+
+Existing Supabase projects must apply [the register-actions migration](supabase/migrations/202610150001_register_actions.sql) before using checklist reset or directory bulk activation. Run `supabase db push`, or execute that migration in the project's SQL editor. The migration does not delete records. Run `supabase test db` against a local test database after applying all migrations to verify the reset and permission rules.
+
+The import screen offers a blank CSV template, a separate sample CSV, and a downloadable instructions file for each import type. Instructions are also displayed in the app. Keep serial/code columns as Text in spreadsheets, preserve leading zeros, and save CSV UTF-8. Import supervisors first when enumerators reference their codes. Do not upload instruction rows or unedited sample records.
+
 ## Install the PWA
 
 - **Chrome or Edge on desktop/Android:** open the HTTPS deployment, use the install icon in the address bar or **Menu → Install Survey Phone Tracker**.
@@ -157,5 +175,9 @@ git push -u origin main
 Replace the remote URL with the repository URL you created. Review `.env.local` remains ignored before committing.
 
 ## Live-service setup still required
+
+Dashboard issuing: Admins can use **Issue phones** for one phone or **Bulk-issue phones** for multiple phones. Select available serials or paste a comma/space/newline-separated list, choose one enumerator or supervisor as the recipient, and choose DASH or NUTRINT. Review the batch before confirming. Each phone is saved independently; the result lists successes and failures, without automatic retries. Supervisor-only checkouts require `supabase/migrations/202610150003_supervisor_issuing.sql` after all earlier migrations. This migration permits a supervisor as the direct holder and retains existing checkout/audit history.
+
+For project-aware issuing, apply pending migrations in filename order, including `supabase/migrations/202610150002_checkout_projects.sql`, in the Supabase SQL editor before using the updated issue form. New checkouts require DASH or NUTRINT; supervisor is optional. Earlier checkouts retain a blank project because it was not recorded. Enumerator selection supports a dropdown and name/code search of active entries. The project is included in the register, movement history, CSV and PDF exports. Run `supabase/tests/001_security_and_workflows.sql` against a test database with pgTAP after applying all migrations.
 
 No Supabase or Vercel credentials are stored in this repository. The application and policies can be compiled and tested locally without committing credentials, but authentication, shared-data behavior, migrations, email delivery, and the final deployment must be verified against the Supabase/Vercel projects you configure.

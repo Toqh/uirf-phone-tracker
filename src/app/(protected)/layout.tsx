@@ -1,13 +1,17 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
-import type { Profile } from "@/lib/types";
+import Loading from "./loading";
 
-export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth");
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if (!profile || profile.status !== "approved") redirect("/pending");
-  return <AppShell profile={profile as Profile}>{children}</AppShell>;
+async function AuthorizedShell({ children }: { children: React.ReactNode }) {
+  const { profile } = await requireProfile();
+  return <AppShell profile={profile}>{children}</AppShell>;
+}
+
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<main className="content"><Loading /></main>}>
+      <AuthorizedShell>{children}</AuthorizedShell>
+    </Suspense>
+  );
 }

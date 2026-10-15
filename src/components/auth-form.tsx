@@ -5,27 +5,42 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function AuthForm() {
+export function AuthForm({ initialMessage = "" }: { initialMessage?: string }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage);
   const router = useRouter();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!navigator.onLine) return setMessage("You appear to be offline. Connect to the internet and try again.");
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes("example.supabase.co")) {
+      return setMessage("Supabase is not connected yet. Add the project URL and publishable key to .env.local, then restart the local server.");
+    }
     setBusy(true);
     setMessage("");
     const values = new FormData(event.currentTarget);
     const email = String(values.get("email") || "").trim();
     const password = String(values.get("password") || "");
-    const supabase = createClient();
     try {
+      const supabase = createClient();
       if (mode === "signup") {
         const fullName = String(values.get("fullName") || "").trim();
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}/auth/confirm`
+          }
+        });
         if (error) throw error;
-        setMessage("Account created. An administrator must approve viewing access before you can see records.");
+        if (data.session) {
+          router.replace("/pending");
+          router.refresh();
+          return;
+        }
+        setMessage("Check your email and follow the confirmation link. After that, an administrator must approve your access.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
@@ -15,6 +15,11 @@ const adminLinks = [
   ["/imports", "Imports"],
   ["/accounts", "Accounts"]
 ];
+
+function NavigationLabel({ label }: { label: string }) {
+  const { pending } = useLinkStatus();
+  return <span aria-busy={pending}>{label}<span className={`navigation-hint${pending ? " pending" : ""}`} aria-hidden="true" /></span>;
+}
 
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,7 +40,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <aside className="sidebar no-print">
         <div className="logo"><span>✓</span><div>Survey Phone<small>Tracker</small></div></div>
         <nav aria-label="Primary navigation">
-          {links.map(([href, label]) => <Link key={href} href={href} className={pathname === href ? "active" : ""}>{label}</Link>)}
+          {links.map(([href, label]) => <Link key={href} href={href} className={pathname === href ? "active" : ""}><NavigationLabel label={label} /></Link>)}
         </nav>
         <Link className="install-link" href="/install">Install on this device</Link>
         <div className="account-card">
@@ -48,7 +53,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         <header className="mobile-header no-print"><div className="logo"><span>✓</span><div>Phone Tracker</div></div><button onClick={signOut}>Sign out</button></header>
         <main className="content">{children}</main>
         <nav className="mobile-nav no-print" aria-label="Mobile navigation">
-          {links.slice(0, 5).map(([href, label]) => <Link key={href} href={href} className={pathname === href ? "active" : ""}>{label}</Link>)}
+          {links.slice(0, 5).map(([href, label]) => <Link key={href} href={href} className={pathname === href ? "active" : ""}><NavigationLabel label={label} /></Link>)}
         </nav>
       </div>
     </div>

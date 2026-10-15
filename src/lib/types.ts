@@ -1,4 +1,5 @@
 export type Role = "admin" | "supervisor";
+export type Project = "DASH" | "NUTRINT";
 export type AccountStatus = "pending" | "approved" | "disabled";
 export type PhoneStatus = "awaiting_configuration" | "available" | "issued" | "needs_attention";
 
@@ -31,6 +32,7 @@ export interface Enumerator {
 }
 
 export interface PhoneRow {
+  project: Project | null;
   id: string;
   serial_number: string;
   status: PhoneStatus;
@@ -50,10 +52,11 @@ export interface PhoneRow {
 }
 
 export interface MovementRow {
+  project: Project | null;
   id: string;
   phone_id: string;
   serial_number: string;
-  enumerator_name: string;
+  enumerator_name: string | null;
   supervisor_name: string | null;
   collected_at: string;
   returned_at: string | null;

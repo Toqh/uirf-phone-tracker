@@ -5,6 +5,8 @@ export function onlineError() {
 }
 
 export function friendlyError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "The action could not be completed.");
+  const message = error && typeof error === "object" && "message" in error && typeof error.message === "string"
+    ? error.message
+    : "The action could not be completed. Check your connection and try again.";
   return message.replace(/^.*?(permission denied|not authorised|not approved|already issued|not available|not configured|already returned)/i, "$1");
 }
