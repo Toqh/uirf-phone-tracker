@@ -1,0 +1,32 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(14);
+insert into auth.users(id, aud, role, email, raw_user_meta_data)
+values ('11000000-0000-0000-0000-000000000001','authenticated','authenticated','roles-admin@example.test','{"full_name":"Role Admin"}'),
+       ('11000000-0000-0000-0000-000000000002','authenticated','authenticated','roles-user@example.test','{"full_name":"Role User"}');
+update public.profiles set role = 'admin', status = 'approved' where id = '11000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select throws_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','enumerator')$$, 'P0001', 'Approve and enable the account before assigning a role', 'pending account cannot be assigned a role');
+select public.approve_account('11000000-0000-0000-0000-000000000002');
+select lives_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','enumerator')$$, 'Admin can assign Enumerator');
+select is((select role::text from public.profiles where id = '11000000-0000-0000-0000-000000000002'), 'enumerator', 'Enumerator stored');
+select is((select details->>'previous_role' from public.audit_events where entity_id = '11000000-0000-0000-0000-000000000002' and event_type = 'account.role_changed'), 'supervisor', 'previous role audited');
+select throws_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000001','enumerator')$$, 'P0001', 'You cannot change your own role', 'self role changes blocked');
+select throws_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','owner')$$, 'P0001', 'Select Admin, Supervisor, or Enumerator', 'unknown roles blocked');
+select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select throws_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','admin')$$, '42501', 'Not authorised: an approved Admin is required', 'Enumerator cannot escalate permissions');
+select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select lives_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','admin')$$, 'Admin can promote Enumerator');
+select lives_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','supervisor')$$, 'Admin can change another Admin to Supervisor');
+select public.set_account_role('11000000-0000-0000-0000-000000000002','enumerator');
+select public.save_enumerator(null,'LINK-TEST','Linked Enumerator',null,true);
+select lives_ok($$select public.link_enumerator_account((select id from public.enumerators where enumerator_code = 'LINK-TEST'),'11000000-0000-0000-0000-000000000002')$$, 'Admin links an Enumerator login');
+select is((select linked_profile_id::text from public.enumerators where enumerator_code = 'LINK-TEST'), '11000000-0000-0000-0000-000000000002', 'directory identity link persisted');
+select throws_ok($$select public.link_enumerator_account((select id from public.enumerators where enumerator_code = 'LINK-TEST'),'11000000-0000-0000-0000-000000000001')$$, 'P0001', 'Select an approved Enumerator account', 'wrong account role rejected');
+select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select throws_ok($$select public.link_enumerator_account((select id from public.enumerators where enumerator_code = 'LINK-TEST'),null)$$, '42501', 'Not authorised: an approved Admin is required', 'Enumerator cannot change directory links');
+select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select lives_ok($$select public.link_enumerator_account((select id from public.enumerators where enumerator_code = 'LINK-TEST'),null)$$, 'Admin can unlink account');
+select * from finish();
+rollback;

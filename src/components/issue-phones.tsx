@@ -1,21 +1,27 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Enumerator, PhoneRow, Supervisor } from "@/lib/types";
 import { canIssue, resolveSerials } from "@/lib/issuing";
 import { runBulk } from "@/lib/register";
 import { callRpc } from "@/lib/supabase/rpc";
 import { EnumeratorPicker } from "./enumerator-picker";
+import { RegisterPhoneDialog } from "./register-phone-dialog";
 import { friendlyError, onlineError } from "./online-action";
 
 type IssueData = { phones: PhoneRow[]; enumerators: Enumerator[]; supervisors: Supervisor[] };
 
-export function IssuePhonesActions(props: IssueData) {
+export function IssuePhonesActions({ showRegistration = false, ...props }: IssueData & { showRegistration?: boolean }) {
   const [mode, setMode] = useState<"single" | "bulk" | null>(null);
-  return <div className="button-row no-print">
+  const [registering, setRegistering] = useState(false);
+  return <div className="button-row overview-actions no-print">
+    {showRegistration && <button className="button primary" onClick={() => setRegistering(true)}>Register phone</button>}
     <button className="button primary" onClick={() => setMode("single")}>Issue phones</button>
-    <button className="button" onClick={() => setMode("bulk")}>Bulk-issue phones</button>
+    <button className="button primary" onClick={() => setMode("bulk")}>Bulk issue phones</button>
+    {showRegistration && <Link className="button primary" href="/phones">Manage phones</Link>}
+    {registering && <RegisterPhoneDialog onClose={() => setRegistering(false)} />}
     {mode && <IssuePhonesDialog {...props} bulk={mode === "bulk"} onClose={() => setMode(null)} />}
   </div>;
 }

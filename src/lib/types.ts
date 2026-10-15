@@ -1,4 +1,4 @@
-export type Role = "admin" | "supervisor";
+export type Role = "admin" | "supervisor" | "enumerator";
 export type Project = "DASH" | "NUTRINT";
 export type AccountStatus = "pending" | "approved" | "disabled";
 export type PhoneStatus = "awaiting_configuration" | "available" | "issued" | "needs_attention";
@@ -24,6 +24,7 @@ export interface Supervisor {
 }
 
 export interface Enumerator {
+  linked_profile_id?: string | null;
   id: string;
   enumerator_code: string;
   full_name: string;

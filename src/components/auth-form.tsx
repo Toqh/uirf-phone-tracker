@@ -66,6 +66,7 @@ export function AuthForm({ initialMessage = "" }: { initialMessage?: string }) {
         {message && <div className="notice" role="status">{message}</div>}
         <button className="button primary wide" disabled={busy}>{busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create pending account"}</button>
       </form>
+      {mode === "signin" && <Link className="install-auth-link" href="/auth/forgot-password">Forgot password?</Link>}
       <button className="text-button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(""); }}>
         {mode === "signin" ? "Need an account? Sign up" : "Already registered? Sign in"}
       </button>

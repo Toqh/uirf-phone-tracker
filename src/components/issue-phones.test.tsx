@@ -9,10 +9,19 @@ const ready = { id: "one", serial_number: "AVAILABLE-001", status: "available", 
 const props = { phones: [ready, { ...ready, id: "two", serial_number: "ISSUED-002", status: "issued" as const }], enumerators: [], supervisors: [] };
 
 describe("dashboard issuing controls", () => {
+  it("orders Overview actions as register, issue, then bulk issue", () => {
+    const html = renderToStaticMarkup(createElement(IssuePhonesActions, { ...props, showRegistration: true }));
+    expect(html).toContain("overview-actions");
+    expect(html.indexOf("Register phone")).toBeLessThan(html.indexOf("Issue phones"));
+    expect(html.indexOf("Issue phones")).toBeLessThan(html.indexOf("Bulk issue phones"));
+    expect(html.indexOf("Bulk issue phones")).toBeLessThan(html.indexOf("Manage phones"));
+    expect(html).toContain('href="/phones">Manage phones</a>');
+    expect(html).not.toContain('href="/phones?new=1"');
+  });
   it("offers separate single and bulk issuing buttons", () => {
     const html = renderToStaticMarkup(createElement(IssuePhonesActions, props));
     expect(html).toContain("Issue phones</button>");
-    expect(html).toContain("Bulk-issue phones</button>");
+    expect(html).toContain("Bulk issue phones</button>");
   });
   it("shows only eligible serials and requires a recipient and project", () => {
     const html = renderToStaticMarkup(createElement(IssuePhonesDialog, { ...props, bulk: true, onClose: () => {} }));
