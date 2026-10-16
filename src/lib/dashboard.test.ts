@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dashboardPhones } from "./dashboard";
+import { dashboardPhones, supervisorRoster } from "./dashboard";
 import type { Enumerator, PhoneRow, Profile, Supervisor } from "./types";
 
 const enumerators = [
@@ -29,5 +29,23 @@ describe("personalised dashboard phones", () => {
   });
   it("retains full totals for admins", () => {
     expect(scope("admin", "admin").phones).toEqual(phones);
+  });
+});
+
+describe("supervisor enumerator roster", () => {
+  const team = [...enumerators, { id: "e3", usual_supervisor_id: "s1", active: false }, { id: "e4", usual_supervisor_id: "s2" }] as Enumerator[];
+  it("includes members without phones and enumerators assigned through current checkouts", () => {
+    const roster = supervisorRoster({ id: "login-s1", role: "supervisor" } as Profile, phones, team, supervisors);
+    expect(roster.map(({ enumerator, phones }) => [enumerator.id, phones.map((phone) => phone.id)])).toEqual([
+      ["e1", ["personal"]], ["e2", ["checkout-team"]], ["e3", []],
+    ]);
+  });
+  it("does not include returned checkouts or unrelated enumerators", () => {
+    const roster = supervisorRoster({ id: "login-s1", role: "supervisor" } as Profile, phones.filter((phone) => phone.id !== "checkout-team"), team, supervisors);
+    expect(roster.map(({ enumerator }) => enumerator.id)).toEqual(["e1", "e3"]);
+  });
+  it("does not expose a team to an unlinked account or an enumerator", () => {
+    expect(supervisorRoster({ id: "unknown", role: "supervisor" } as Profile, phones, team, supervisors)).toEqual([]);
+    expect(supervisorRoster({ id: "login-s1", role: "enumerator" } as Profile, phones, team, supervisors)).toEqual([]);
   });
 });

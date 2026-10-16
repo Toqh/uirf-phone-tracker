@@ -1,5 +1,14 @@
 import type { Enumerator, PhoneRow, Profile, Supervisor } from "./types";
 
+export function supervisorRoster(profile: Profile, phones: PhoneRow[], enumerators: Enumerator[], supervisors: Supervisor[]) {
+  if (profile.role !== "supervisor") return [];
+  const supervisorIds = new Set(supervisors.filter((item) => item.linked_profile_id === profile.id).map((item) => item.id));
+  const assigned = dashboardPhones(profile, phones, enumerators, supervisors).phones;
+  return enumerators
+    .filter((item) => (item.usual_supervisor_id && supervisorIds.has(item.usual_supervisor_id)) || assigned.some((phone) => phone.enumerator_id === item.id))
+    .map((enumerator) => ({ enumerator, phones: assigned.filter((phone) => phone.enumerator_id === enumerator.id) }));
+}
+
 export function dashboardPhones(profile: Profile, phones: PhoneRow[], enumerators: Enumerator[], supervisors: Supervisor[]) {
   if (profile.role === "admin") return { linked: true, phones };
   const personal = enumerators.filter((item) => item.linked_profile_id === profile.id);

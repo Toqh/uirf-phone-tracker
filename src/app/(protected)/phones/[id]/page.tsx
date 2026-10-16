@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireProfile } from "@/lib/auth";
+import { requireRegisterAccess } from "@/lib/auth";
 import { formatLagos, statusLabel } from "@/lib/format";
 import { CorrectionForm } from "@/components/correction-form";
 import type { AuditEvent, Enumerator, MovementRow, PhoneRow, Supervisor } from "@/lib/types";
 
 export default async function PhoneDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params; const { supabase, profile } = await requireProfile();
+  const { supabase, profile } = await requireRegisterAccess();
+  const { id } = await params;
   const [phoneResult, movementResult, eventResult, enumResult, supResult] = await Promise.all([
     supabase.from("phone_register").select("*").eq("id", id).maybeSingle(),
     supabase.from("movement_history").select("*").eq("phone_id", id).order("collected_at", { ascending: false }),

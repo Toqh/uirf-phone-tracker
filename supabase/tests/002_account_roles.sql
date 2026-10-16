@@ -5,6 +5,8 @@ insert into auth.users(id, aud, role, email, raw_user_meta_data)
 values ('11000000-0000-0000-0000-000000000001','authenticated','authenticated','roles-admin@example.test','{"full_name":"Role Admin"}'),
        ('11000000-0000-0000-0000-000000000002','authenticated','authenticated','roles-user@example.test','{"full_name":"Role User"}');
 update public.profiles set role = 'admin', status = 'approved' where id = '11000000-0000-0000-0000-000000000001';
+-- Pending status remains protected for manually restricted or legacy accounts.
+update public.profiles set status = 'pending', approved_at = null, approved_by = null where id = '11000000-0000-0000-0000-000000000002';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"11000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok($$select public.set_account_role('11000000-0000-0000-0000-000000000002','enumerator')$$, 'P0001', 'Approve and enable the account before assigning a role', 'pending account cannot be assigned a role');

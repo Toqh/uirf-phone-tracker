@@ -10,25 +10,30 @@ import type { Enumerator, PhoneRow, Supervisor } from "@/lib/types";
 import { matchesFilter, sortRows, visibleSelection } from "@/lib/register";
 import { BulkActions, SelectRow, SortControls } from "./register-tools";
 import { IssuePhonesDialog } from "./issue-phones";
+import { phoneCategories, readPhoneFilters, type PhoneFilters } from "@/lib/phone-filters";
 
 type Dialog = { type: "issue" | "return" | "configure" | "attention" | "reset"; phone: PhoneRow } | null;
 const readinessChecks = ["Survey application installed", "Correct survey, project, or form loaded", "Login and synchronisation tested", "Device checked and ready for use"];
 
-export function PhoneRegister({ phones, enumerators, supervisors, isAdmin, compact = false }: {
+export function PhoneRegister({ phones, enumerators, supervisors, isAdmin, compact = false, initialStatus = null, filters: controlledFilters, onFiltersChange }: {
   phones: PhoneRow[];
   enumerators: Enumerator[];
   supervisors: Supervisor[];
   isAdmin: boolean;
   compact?: boolean;
+  initialStatus?: string | null;
+  filters?: PhoneFilters;
+  onFiltersChange?: (filters: PhoneFilters) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [person, setPerson] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [localFilters, setLocalFilters] = useState(() => readPhoneFilters(new URLSearchParams({ status: initialStatus || "all" })));
+  const filters = controlledFilters || localFilters;
+  const { query, status, person, from, to, exclude, readiness } = filters;
+  function updateFilters(change: Partial<PhoneFilters>) {
+    const next = { ...filters, ...change };
+    if (onFiltersChange) onFiltersChange(next); else setLocalFilters(next);
+    setSelected([]);
+  }
   const [dialog, setDialog] = useState<Dialog>(null);
-  const [exclude, setExclude] = useState(false);
-  const [readiness, setReadiness] = useState("all");
   const [sort, setSort] = useState("serial_number"); const [direction, setDirection] = useState("asc");
   const [selected, setSelected] = useState<string[]>([]);
   const filtered = useMemo(() => sortRows(phones.filter((phone) => {
@@ -42,18 +47,18 @@ export function PhoneRegister({ phones, enumerators, supervisors, isAdmin, compa
 
   return <>
     <section className="panel register-panel">
-      <div className="panel-header"><div><h2>Phone register</h2><span className="section-note">{filtered.length} shown</span></div></div>
+      <div className="panel-header"><div><h2>{exclude && status !== "all" ? `Excluding ${phoneCategories[status].toLowerCase()}` : phoneCategories[status]}</h2><span className="section-note" role="status">{filtered.length} shown</span></div></div>
       <div className="toolbar no-print">
-        <input className="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search serial, holder, or project" aria-label="Search phones" />
-        <input value={person} onChange={(e) => setPerson(e.target.value)} placeholder="Enumerator or supervisor" aria-label="Filter by person" />
-        <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
+        <input className="search" value={query} onChange={(e) => updateFilters({ query: e.target.value })} placeholder="Search serial, holder, or project" aria-label="Search phones" />
+        <input value={person} onChange={(e) => updateFilters({ person: e.target.value })} placeholder="Enumerator or supervisor" aria-label="Filter by person" />
+        <select value={status} onChange={(e) => updateFilters({ status: e.target.value as PhoneFilters["status"] })} aria-label="Filter by status">
           <option value="all">Every status</option><option value="awaiting_configuration">Awaiting configuration</option><option value="available">Available</option><option value="issued">Issued</option><option value="needs_attention">Needs attention</option>
         </select>
-        <label className="check-row"><input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} />Exclude selected status</label>
-        <select aria-label="Filter checklist readiness" value={readiness} onChange={(e) => setReadiness(e.target.value)}><option value="all">Every checklist</option><option value="complete">Checklist complete</option><option value="incomplete">Checklist incomplete</option></select>
+        <label className="check-row"><input type="checkbox" checked={exclude} onChange={(e) => updateFilters({ exclude: e.target.checked })} />Exclude selected status</label>
+        <select aria-label="Filter checklist readiness" value={readiness} onChange={(e) => updateFilters({ readiness: e.target.value as PhoneFilters["readiness"] })}><option value="all">Every checklist</option><option value="complete">Checklist complete</option><option value="incomplete">Checklist incomplete</option></select>
         <SortControls fields={[["serial_number", "Phone"], ["status", "Status"], ["enumerator_name", "Holder"], ["supervisor_name", "Supervisor"], ["collected_at", "Collected"], ["configured_at", "Configured"]]} field={sort} direction={direction} onField={setSort} onDirection={setDirection} />
-        <button className="button ghost" onClick={() => { setQuery(""); setStatus("all"); setExclude(false); setReadiness("all"); setPerson(""); setFrom(""); setTo(""); setSelected([]); }}>Clear filters</button>
-        {!compact && <><label className="inline-label">From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label className="inline-label">To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></>}
+        <button className="button ghost" onClick={() => updateFilters(readPhoneFilters(new URLSearchParams()))}>Clear filters</button>
+        {!compact && <><label className="inline-label">From<input type="date" value={from} onChange={(e) => updateFilters({ from: e.target.value })} /></label><label className="inline-label">To<input type="date" value={to} onChange={(e) => updateFilters({ to: e.target.value })} /></label></>}
       </div>
       {isAdmin && !compact && <BulkActions rows={selectedRows} label={(phone) => phone.serial_number} onClear={() => setSelected([])} onCompleted={(ids) => setSelected((current) => current.filter((id) => !ids.includes(id)))} actions={[
         { label: "Complete checklists", eligible: (phone) => phone.status === "awaiting_configuration", hint: "Every selected phone must be awaiting configuration. Confirm each check for ALL selected phones.", checks: readinessChecks, run: (phone) => callRpc("configure_phone", { p_phone_id: phone.id, p_survey_app_installed: true, p_correct_form_loaded: true, p_login_sync_tested: true, p_device_checked: true }) },

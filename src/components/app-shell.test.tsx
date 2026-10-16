@@ -27,4 +27,14 @@ describe("mobile hamburger navigation", () => {
     const html = render("supervisor");
     for (const href of ["accounts", "directory", "imports"]) expect(html).not.toContain(`href="/${href}"`);
   });
+  it("limits enumerator navigation to My phones on desktop and mobile", () => {
+    const html = render("enumerator");
+    expect(html.match(/href="\/dashboard"/g)).toHaveLength(2);
+    expect(html).toContain("My phones");
+    for (const href of ["phones", "reports", "accounts", "directory", "imports"]) expect(html).not.toContain(`href="/${href}"`);
+  });
+  it("retains register and reports navigation for supervisors", () => {
+    const html = render("supervisor");
+    for (const href of ["phones", "reports"]) expect(html.match(new RegExp(`href="/${href}"`, "g"))).toHaveLength(2);
+  });
 });

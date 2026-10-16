@@ -28,3 +28,19 @@ describe("checklist reset control", () => {
     expect(html).not.toContain("Select phone 007");
   });
 });
+
+describe("overview status filters", () => {
+  const phones = ["awaiting_configuration", "available", "issued", "needs_attention"].map((status, index) => ({
+    id: status, serial_number: `00${index}`, status, configured_at: null,
+  })) as PhoneRow[];
+  it.each(phones)("shows only $status phones for a scorecard link", (target) => {
+    const html = renderToStaticMarkup(createElement(PhoneRegister, { phones, enumerators: [], supervisors: [], isAdmin: false, initialStatus: target.status }));
+    expect(html).toContain("1 shown");
+    for (const phone of phones) {
+      expect(html.includes(`href="/phones/${phone.id}"`)).toBe(phone.id === target.id);
+    }
+  });
+  it.each([null, "all", "invalid"])("shows all phones for status %s", (initialStatus) => {
+    expect(renderToStaticMarkup(createElement(PhoneRegister, { phones, enumerators: [], supervisors: [], isAdmin: false, initialStatus }))).toContain("4 shown");
+  });
+});

@@ -9,7 +9,10 @@ values
   ('10000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'pending@example.test', crypt('test-password', gen_salt('bf')), '{"provider":"email","providers":["email"]}', '{"full_name":"Pending User","role":"admin","status":"approved"}', now(), now());
 
 select is((select role::text from public.profiles where id = '10000000-0000-0000-0000-000000000003'), 'supervisor', 'signup metadata cannot set Admin role');
-select is((select status::text from public.profiles where id = '10000000-0000-0000-0000-000000000003'), 'pending', 'new account remains pending');
+select is((select status::text from public.profiles where id = '10000000-0000-0000-0000-000000000003'), 'approved', 'new account receives viewing access only');
+
+-- Keep an explicit pending fixture to verify that the database still enforces account status.
+update public.profiles set status = 'pending', approved_at = null, approved_by = null where id = '10000000-0000-0000-0000-000000000003';
 
 update public.profiles set role = 'admin', status = 'approved', approved_at = now(), approved_by = id where id = '10000000-0000-0000-0000-000000000001';
 update public.profiles set status = 'approved', approved_at = now(), approved_by = '10000000-0000-0000-0000-000000000001' where id = '10000000-0000-0000-0000-000000000002';

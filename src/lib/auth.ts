@@ -27,3 +27,9 @@ export async function requireProfile(requireAdmin = false) {
   if (requireAdmin && profile.role !== "admin") redirect("/dashboard");
   return { ...account, profile };
 }
+
+export async function requireRegisterAccess() {
+  const account = await requireProfile();
+  if (account.profile.role !== "admin" && account.profile.role !== "supervisor") redirect("/dashboard");
+  return account;
+}

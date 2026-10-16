@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = confirmed ? "/pending" : "/auth";
+  redirectTo.pathname = confirmed ? "/dashboard" : "/auth";
   redirectTo.search = confirmed ? "" : "?confirmation=failed";
 
   return NextResponse.redirect(redirectTo);

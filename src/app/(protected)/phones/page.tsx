@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { PhoneRegisterPage } from "@/components/phone-register-page";
-import { requireProfile } from "@/lib/auth";
+import { requireRegisterAccess } from "@/lib/auth";
 import type { Enumerator, PhoneRow, Supervisor } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Phones" };
 
 export default async function PhonesPage() {
-  const { supabase, profile } = await requireProfile();
+  const { supabase, profile } = await requireRegisterAccess();
   const [phones, enumerators, supervisors] = await Promise.all([
     supabase.from("phone_register").select("*").order("serial_number"),
     supabase.from("enumerators").select("*").order("full_name"),

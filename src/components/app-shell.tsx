@@ -48,7 +48,8 @@ function MobileNavigation({ links, pathname, profile, signOut }: { links: string
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const links = profile.role === "admin" ? [...baseLinks, ...adminLinks] : baseLinks;
+  const links = profile.role === "enumerator" ? [["/dashboard", "My phones"]]
+    : profile.role === "admin" ? [...baseLinks, ...adminLinks] : baseLinks;
 
   async function signOut() {
     const supabase = createClient();

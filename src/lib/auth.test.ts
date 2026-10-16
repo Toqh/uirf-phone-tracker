@@ -15,7 +15,7 @@ vi.mock("@/lib/supabase/server", () => ({
   })
 }));
 
-import { getAccount, requireProfile } from "./auth";
+import { getAccount, requireProfile, requireRegisterAccess } from "./auth";
 
 describe("account access during failures", () => {
   beforeEach(() => {
@@ -47,9 +47,18 @@ describe("account access during failures", () => {
     await expect(requireProfile()).rejects.toThrow("redirect:/auth");
   });
 
-  it.each(["pending", "disabled"])("keeps %s users out of protected pages", async (status) => {
-    maybeSingle.mockResolvedValue({ data: { status, role: "supervisor" }, error: null });
+  it.each([
+    ["pending", "supervisor"], ["disabled", "supervisor"], ["disabled", "enumerator"],
+  ])("keeps %s %s users out of protected pages", async (status, role) => {
+    maybeSingle.mockResolvedValue({ data: { status, role }, error: null });
     await expect(requireProfile()).rejects.toThrow("redirect:/pending");
+  });
+
+  it.each(["enumerator", "supervisor"])("allows automatically approved %s accounts without Admin access", async (role) => {
+    maybeSingle.mockResolvedValue({ data: { status: "approved", role, approved_by: null }, error: null });
+    await expect(requireProfile()).resolves.toMatchObject({ profile: { role, status: "approved" } });
+    expect(redirect).not.toHaveBeenCalled();
+    await expect(requireProfile(true)).rejects.toThrow("redirect:/dashboard");
   });
 
   it("retains the admin check after an ordinary access check", async () => {
@@ -60,5 +69,18 @@ describe("account access during failures", () => {
   it("allows approved admins", async () => {
     maybeSingle.mockResolvedValue({ data: { status: "approved", role: "admin" }, error: null });
     await expect(requireProfile(true)).resolves.toMatchObject({ profile: { role: "admin" } });
+  });
+
+  it("rejects enumerators from register and reporting access", async () => {
+    maybeSingle.mockResolvedValue({ data: { status: "approved", role: "enumerator" }, error: null });
+    await expect(requireRegisterAccess()).rejects.toThrow("redirect:/dashboard");
+  });
+  it.each(["admin", "supervisor"])("retains register access for %s", async (role) => {
+    maybeSingle.mockResolvedValue({ data: { status: "approved", role }, error: null });
+    await expect(requireRegisterAccess()).resolves.toMatchObject({ profile: { role } });
+  });
+  it.each(["pending", "disabled"])("rejects %s accounts from register access", async (status) => {
+    maybeSingle.mockResolvedValue({ data: { status, role: "supervisor" }, error: null });
+    await expect(requireRegisterAccess()).rejects.toThrow("redirect:/pending");
   });
 });

@@ -39,6 +39,11 @@ h2 { letter-spacing: -0.025em; }
 .auth-panel { display: grid; place-items: center; padding: 2rem; }
 .auth-card { width: min(100%, 430px); background: var(--paper); border: 1px solid var(--line); border-radius: 22px; padding: clamp(1.8rem, 4vw, 3rem); box-shadow: var(--shadow); }
 .auth-card h2 { font-size: 2rem; margin-bottom: .4rem; }
+.password-field { display: grid; gap: .35rem; }
+.password-input { position: relative; }
+.password-input input { padding-right: 3rem; }
+.password-toggle { position: absolute; right: 0; top: 0; bottom: 0; width: 44px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
+.password-toggle:focus-visible { outline: 2px solid var(--green-2); outline-offset: 2px; }
 .stack { display: grid; gap: 1rem; margin-top: 2rem; }
 label { display: grid; gap: .42rem; font-size: .82rem; font-weight: 700; color: #36443c; }
 input, select, textarea { width: 100%; min-height: 42px; border: 1px solid #cbd4ce; border-radius: 9px; padding: .65rem .78rem; color: var(--ink); background: white; outline: none; }
@@ -97,6 +102,8 @@ textarea { min-height: 92px; resize: vertical; }
 .stat-card span { display: block; color: var(--muted); font-size: .76rem; font-weight: 650; }
 .stat-card strong { display: block; margin-top: .35rem; font-family: var(--font-data), sans-serif; font-size: 2.4rem; font-weight: 700; line-height: .9; }
 .stat-card span { color: #666; }
+a.stat-card:hover { border-color: var(--green-2); background: #f5f8f6; }
+a.stat-card:focus-visible { outline: 3px solid var(--green-2); outline-offset: 3px; }
 .overview-actions { gap: 1rem; margin-bottom: 1.5rem; }
 .overview-actions > .button { min-height: 56px; min-width: 180px; padding: 1rem 1.5rem; border-radius: 12px; font-size: 1rem; flex: 1 1 180px; }
 .panel { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); overflow: hidden; }
