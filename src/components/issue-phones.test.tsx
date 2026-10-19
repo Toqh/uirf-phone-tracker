@@ -23,6 +23,12 @@ describe("dashboard issuing controls", () => {
     expect(html).toContain("Issue phones</button>");
     expect(html).toContain("Bulk issue phones</button>");
   });
+  it("offers bulk returns on Overview only when there are active checkouts", () => {
+    expect(renderToStaticMarkup(createElement(IssuePhonesActions, props))).toMatch(/<button[^>]*disabled=""[^>]*>Bulk return phones<\/button>/);
+    const html = renderToStaticMarkup(createElement(IssuePhonesActions, { ...props, phones: [{ ...ready, status: "issued", active_checkout_id: "checkout" }] }));
+    expect(html).toContain("Bulk return phones</button>");
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Bulk return phones<\/button>/);
+  });
   it("shows only eligible serials and requires a recipient and project", () => {
     const html = renderToStaticMarkup(createElement(IssuePhonesDialog, { ...props, bulk: true, onClose: () => {} }));
     expect(html).toContain("AVAILABLE-001");

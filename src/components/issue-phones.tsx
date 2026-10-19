@@ -10,19 +10,24 @@ import { callRpc } from "@/lib/supabase/rpc";
 import { EnumeratorPicker } from "./enumerator-picker";
 import { RegisterPhoneDialog } from "./register-phone-dialog";
 import { friendlyError, onlineError } from "./online-action";
+import { BulkReturnPhonesDialog } from "./bulk-return-phones";
+import { canReturn } from "@/lib/returning";
 
 type IssueData = { phones: PhoneRow[]; enumerators: Enumerator[]; supervisors: Supervisor[] };
 
 export function IssuePhonesActions({ showRegistration = false, ...props }: IssueData & { showRegistration?: boolean }) {
   const [mode, setMode] = useState<"single" | "bulk" | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [returning, setReturning] = useState(false);
   return <div className="button-row overview-actions no-print">
     {showRegistration && <button className="button primary" onClick={() => setRegistering(true)}>Register phone</button>}
     <button className="button primary" onClick={() => setMode("single")}>Issue phones</button>
     <button className="button primary" onClick={() => setMode("bulk")}>Bulk issue phones</button>
+    <button className="button primary" disabled={!props.phones.some(canReturn)} onClick={() => setReturning(true)}>Bulk return phones</button>
     {showRegistration && <Link className="button primary" href="/phones">Manage phones</Link>}
     {registering && <RegisterPhoneDialog onClose={() => setRegistering(false)} />}
     {mode && <IssuePhonesDialog {...props} bulk={mode === "bulk"} onClose={() => setMode(null)} />}
+    {returning && <BulkReturnPhonesDialog phones={props.phones} onClose={() => setReturning(false)} />}
   </div>;
 }
 

@@ -144,6 +144,8 @@ The partial unique index and `FOR UPDATE` lock are the database guarantees for c
 
 ## Register controls and CSV imports
 
+Admins can use **Bulk return phones** on Overview to select current checkouts by serial, holder or project, paste serial numbers, or select all matching issued phones. Review the phones and confirm they were received in good condition before saving. Each return uses the existing `return_phone` operation, closes the active checkout, retains history and makes the phone available again. Successes and failures are shown separately without automatic retries. Return faulty phones individually in Phone management so their fault details are recorded. No new database migration is needed for this action.
+
 Phone, directory, and account registers support sorting, filtering, row selection, and Admin-only bulk actions. Select-all targets the currently visible filtered rows. Bulk writes are saved per record, with separate success/failure results; failed writes are never automatically retried. Reports and recent import history also support sorting and filters.
 
 Checklist reset is enabled **only for Available phones with completed checklists**, never for Issued phones. Reset requires a reason, returns the phone to Awaiting configuration, clears current readiness, and retains the original checklist and audit history. Completing it again creates a new history entry.
