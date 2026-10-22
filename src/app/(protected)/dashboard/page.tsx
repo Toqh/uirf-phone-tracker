@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AssignedPhones } from "@/components/assigned-phones";
 import { SupervisorTeam } from "@/components/supervisor-team";
+import { OverviewSearch } from "@/components/overview-search";
+import { buildOverviewSearchRecords, type SearchAccount } from "@/lib/overview-search";
 import { dashboardPhones, supervisorRoster } from "@/lib/dashboard";
 import { dashboardGreeting, greetingName } from "@/lib/greeting";
 import { IssuePhonesActions } from "@/components/issue-phones";
@@ -15,12 +17,13 @@ export default async function DashboardPage() {
   const enumeratorResult = await (isEnumerator ? enumeratorQuery.eq("linked_profile_id", profile.id) : enumeratorQuery);
   const enumerators = (enumeratorResult.data || []) as Enumerator[];
   const phoneQuery = supabase.from("phone_register").select("*").order("serial_number");
-  const [phoneResult, supervisorResult, pendingResult] = await Promise.all([
+  const [phoneResult, supervisorResult, pendingResult, accountResult] = await Promise.all([
     isEnumerator
       ? enumerators.length ? phoneQuery.in("enumerator_id", enumerators.map((item) => item.id)).eq("status", "issued").not("active_checkout_id", "is", null) : Promise.resolve({ data: [], error: null })
       : phoneQuery,
     isEnumerator ? Promise.resolve({ data: [], error: null }) : supabase.from("supervisors").select("*").order("full_name"),
-    profile.role === "admin" ? supabase.from("profiles").select("*", { count: "exact" }).eq("status", "pending").order("created_at").limit(20) : Promise.resolve(null)
+    profile.role === "admin" ? supabase.from("profiles").select("*", { count: "exact" }).eq("status", "pending").order("created_at").limit(20) : Promise.resolve(null),
+    profile.role === "admin" ? supabase.from("profiles").select("id,full_name,email,role,status").order("full_name") : Promise.resolve(null)
   ]);
   const phones = (phoneResult.data || []) as PhoneRow[];
   const counts = { total: phones.length, awaiting: 0, available: 0, issued: 0, attention: 0 };
@@ -28,12 +31,18 @@ export default async function DashboardPage() {
   const assigned = dashboardPhones(profile, phones, (enumeratorResult.data || []) as Enumerator[], (supervisorResult.data || []) as Supervisor[]);
   const members = supervisorRoster(profile, phones, (enumeratorResult.data || []) as Enumerator[], (supervisorResult.data || []) as Supervisor[]);
   const recordsError = phoneResult.error || enumeratorResult.error || supervisorResult.error;
+  const searchRecords = recordsError ? [] : buildOverviewSearchRecords({
+    phones, enumerators, supervisors: (supervisorResult.data || []) as Supervisor[],
+    accounts: (accountResult?.data || []) as SearchAccount[], canViewRegister: !isEnumerator,
+  });
   const now = new Date();
   // This async Server Component runs after request authentication, not during client rendering.
   // eslint-disable-next-line react-hooks/purity -- Choose a greeting once per server response; no client hydration randomness.
   const greeting = dashboardGreeting(now, Math.random());
   return <>
     <header className="page-header"><div><h1>{greeting}, {greetingName(profile.full_name)}</h1></div><div className="today-stamp">Nigeria time<br /><strong>{new Intl.DateTimeFormat("en-NG", { timeZone: "Africa/Lagos", dateStyle: "full" }).format(now)}</strong></div></header>
+
+    <OverviewSearch records={searchRecords} canViewRegister={!isEnumerator} loadError={Boolean(recordsError)} accountsError={Boolean(accountResult?.error)} />
 
     {profile.role === "admin" && <section className="stats-grid" aria-label="Phone totals">
       <Link href="/phones" className="stat-card total"><span>All registered phones</span><strong>{counts.total}</strong></Link>
