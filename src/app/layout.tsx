@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Phone Tracker" }
 };
 
-export const viewport: Viewport = { themeColor: "#12372a", colorScheme: "light" };
+export const viewport: Viewport = { themeColor: "#27166e", colorScheme: "light" };
 
 const bodyFont = Source_Sans_3({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 const dataFont = Barlow_Condensed({ subsets: ["latin"], variable: "--font-data", weight: ["500", "600", "700", "800"], display: "swap" });

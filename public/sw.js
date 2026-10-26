@@ -1,4 +1,4 @@
-const CACHE = "phone-tracker-static-v1";
+const CACHE = "phone-tracker-static-v2";
 const STATIC = ["/icon.svg", "/maskable-icon.svg", "/icon-192.png", "/icon-512.png", "/maskable-512.png"];
 
 self.addEventListener("install", (event) => {

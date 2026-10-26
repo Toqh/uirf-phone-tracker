@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Manage survey phone configuration, checkout, returns, and history.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#f4f7f4",
-    theme_color: "#12372a",
+    background_color: "#f5f4f8",
+    theme_color: "#27166e",
     orientation: "any",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
